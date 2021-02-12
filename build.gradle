@@ -1,0 +1,146 @@
+buildscript {
+    ext {
+        springBootVersion = '2.2.3.RELEASE'
+    }
+    repositories {
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:2.0.0")
+    }
+}
+
+configure(subprojects) {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.gorylenko.gradle-git-properties'
+
+    configurations {
+        all*.exclude group: 'commons-logging', module: 'commons-logging'    // replaced with jcl-over-slf4j
+        all*.exclude group: 'log4j', module: 'log4j'                        // replaced with log4j-over-slf4j
+
+        all*.exclude module: 'tomcat-jdbc'
+        all*.exclude module: 'spring-boot-starter-tomcat'
+
+        all*.exclude module: 'hsqldb'
+        all*.exclude module: 'slf4j-log4j12'
+        all*.exclude module: 'android-json'
+    }
+
+    repositories {
+        jcenter()
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
+            mavenBom 'com.amazonaws:aws-java-sdk-bom:1.11.714'
+        }
+        dependencies {
+            dependency 'org.projectlombok:lombok:1.18.10'
+            dependency 'javax.annotation:javax.annotation-api:1.3.2'
+            dependency 'javax.mail:mail:1.4.7'
+
+            dependency 'com.amazonaws:aws-java-sdk:1.11.714'
+
+            dependency 'com.fasterxml.jackson.core:jackson-core:2.10.1'
+            dependency 'com.fasterxml.jackson.core:jackson-databind:2.10.1'
+            dependency 'com.fasterxml.jackson.core:jackson-annotations:2.10.1'
+            dependency 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.1'
+            dependency 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.10.1'
+
+            dependency 'com.googlecode.log4jdbc:log4jdbc:1.2'
+            dependency 'org.mariadb.jdbc:mariadb-java-client:2.6.1'
+            dependency 'com.orange.redis-embedded:embedded-redis:0.6'
+
+            dependency 'io.swagger:swagger-annotations:1.5.10'
+            dependency 'io.springfox:springfox-swagger-ui:2.6.0'
+            dependency 'io.springfox:springfox-swagger2:2.6.0'
+
+            dependency 'org.hamcrest:hamcrest-all:1.3'
+            dependency 'org.mockito:mockito-all:1.10.19'
+        }
+    }
+
+
+    dependencies {
+        compile('org.projectlombok:lombok')
+        annotationProcessor('org.projectlombok:lombok')
+        compile('com.google.guava:guava:28.1-jre')
+
+        compile 'org.slf4j:jcl-over-slf4j'
+        compile 'org.slf4j:jul-to-slf4j'
+        compile 'org.slf4j:log4j-over-slf4j'
+
+        testCompile('junit:junit')
+        testCompile('org.assertj:assertj-core')
+        testCompile('org.hamcrest:hamcrest-all')
+        testCompile('org.mockito:mockito-all')
+    }
+
+    gitProperties {
+        dateFormat = "yyyy-MM-dd HH:mm:ss"
+        dateFormatTimeZone = "GMT+9"
+    }
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    compileJava.options.encoding = 'UTF-8'
+}
+
+
+project(':member-service') {
+
+    dependencies {
+        compile('org.springframework.boot:spring-boot-starter-web')
+        implementation('org.springframework.boot:spring-boot-starter-data-jpa')
+//        implementation 'mysql:mysql-connector-java'
+        implementation('com.h2database:h2')
+
+        testCompile('org.springframework.boot:spring-boot-starter-test')
+    }
+}
+
+project(':board-service') {
+
+    dependencies {
+        compile('org.springframework.boot:spring-boot-starter-web')
+        implementation('org.springframework.boot:spring-boot-starter-data-jpa')
+        implementation('com.h2database:h2')
+//        implementation 'mysql:mysql-connector-java'
+
+
+        testCompile('org.springframework.boot:spring-boot-starter-test')
+    }
+}
+
+project(':petmal-back') {
+    apply plugin: 'org.springframework.boot'
+
+    dependencies {
+        compile project(':board-service')
+        compile project(':member-service')
+
+        compile('org.springframework.boot:spring-boot-starter-web')
+        implementation ("org.springframework.boot:spring-boot-starter-undertow")
+        implementation('org.projectlombok:lombok')
+        compile('org.springframework.boot:spring-boot-starter-data-redis')
+
+
+        compile('org.springframework.session:spring-session-data-redis')
+        compile('com.orange.redis-embedded:embedded-redis')
+
+        implementation('com.h2database:h2')
+
+        // for redis connection pool
+        compile('org.apache.commons:commons-pool2')
+
+        testCompile('org.springframework.boot:spring-boot-starter-test')
+
+    }
+
+    bootJar.enabled=true
+    jar.enabled=false
+}

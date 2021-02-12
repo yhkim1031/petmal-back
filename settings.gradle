@@ -1,0 +1,5 @@
+rootProject.name = 'petmal-back'
+include 'member-service'
+include 'petmal-back'
+include 'board-service'
+
